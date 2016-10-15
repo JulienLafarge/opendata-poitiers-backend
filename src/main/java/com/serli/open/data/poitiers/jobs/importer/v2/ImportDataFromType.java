@@ -3,11 +3,12 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.serli.open.data.poitiers.jobs.importer;
+package com.serli.open.data.poitiers.jobs.importer.v2;
 
 import com.serli.open.data.poitiers.api.v2.model.settings.DataSource;
 import com.serli.open.data.poitiers.api.v2.model.settings.Settings;
 import com.serli.open.data.poitiers.elasticsearch.ElasticUtils;
+import com.serli.open.data.poitiers.elasticsearch.RuntimeJestClient;
 import com.serli.open.data.poitiers.geolocation.Address;
 import com.serli.open.data.poitiers.geolocation.GeolocationAPIClient;
 import com.serli.open.data.poitiers.geolocation.LatLon;
@@ -28,29 +29,34 @@ import java.util.Map.Entry;
  *
  * @author Julien L
  */
-public class ImportAllDataJob extends ImportDataJob<FullDataJsonFile> {
+public class ImportDataFromType extends ImportDataJob<FullDataJsonFile> {
 
     public void main(String[] args) throws IOException {
-        new ImportAllDataJob().createIndexAndLoad();
+        new ImportDataFromType().createIndexAndLoad();
     }
     
     public static String elasticType;
     
     @Override
     protected void indexRootElement(FullDataJsonFile fullDataJsonFile) {
+        
         DataJsonObject[] jsonDataFromFiles = fullDataJsonFile.data;
 
         Bulk.Builder bulk = new Bulk.Builder().defaultIndex(OPEN_DATA_POITIERS_INDEX).defaultType(getElasticType());
 
         Arrays.stream(jsonDataFromFiles)
                 .forEach(jsonFromFile -> bulk.addAction(getAction(jsonFromFile)));
+        RuntimeJestClient jc = ElasticUtils.createClient();
+        jc.execute(bulk.build());
         
-        ElasticUtils.createClient().execute(bulk.build());
+        
     }
 
     private Index getAction(DataJsonObject jsonDataFromFile) {
+
         MappingClass mappingClass = new MappingClass(elasticType);
         
+
         for(Map.Entry<String, Object> entry : mappingClass.data.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
@@ -71,8 +77,9 @@ public class ImportAllDataJob extends ImportDataJob<FullDataJsonFile> {
                     mappingClass.data.put(key, property);
                 }
             }
+            
         }
-        
+          
         return new Index.Builder(mappingClass.data).build();
     }
 

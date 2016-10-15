@@ -29,6 +29,7 @@ import java.nio.file.Paths;
 import java.util.UUID;
 
 import static com.serli.open.data.poitiers.jobs.JobRunner.run;
+import com.serli.open.data.poitiers.jobs.importer.v2.ImportDataFromType;
 import static com.serli.open.data.poitiers.repository.ElasticSearchRepository.OPEN_DATA_POITIERS_INDEX;
 import io.searchbox.core.Search;
 
@@ -96,17 +97,16 @@ public class ImportAllDataJobTest {
         node.start();
         // loading settings
         run(ReloadDefaultSettings.class);
-        ImportAllDataJob.elasticType = "test-ES";
-        run(ImportAllDataJob.class);
-
-        
+        ImportDataFromType.elasticType = "test-ES";
+        run(ImportDataFromType.class);
+    
     }
     public int getNbrInstance(){
          String query = "{\n" +
                     "   \"query\": {\n" +
                     "       \"match_all\": {}\n" +
                     "   },\n" +
-                    "   \"size\": " + Integer.MAX_VALUE + "\n" +
+                    "   \"size\": " + 10000 + "\n" +
                     "}";
         String elasticType = "test-ES";
         SearchResult searchResult = performSearchOnType(query, elasticType);
